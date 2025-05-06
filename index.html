@@ -1,0 +1,69 @@
+<html>
+    <head>
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis"></script>
+    </head>
+    <body>
+        <h1><b>TensorFlow.js Example</b></h1>
+        <div id="output_field">Entrenando modelo...</div>
+        <br>
+        <div id="visor_entrenamiento"></div>
+        <h1><b>Prediccion</b></h1>
+        <p>Valores de X (separados por comas):</p>
+        <input type="text" id="user_input" placeholder="escriba tres numeros">
+        <button onclick="predecir()">Predecir</button>
+
+        <div id="resultado" style="margin-top: 10px;"></div>
+    </body>
+    <script>
+        let model;
+
+        async function learnLinear(){
+            model = tf.sequential();
+            model.add(tf.layers.dense({units: 1, inputShape: [1]}));
+
+            model.compile({
+                loss: 'meanSquaredError',
+                optimizer: 'sgd'
+            })
+
+            const xs = tf.tensor2d([-1, 0, 1, 2, 3, 4], [6, 1])
+            const ys = tf.tensor2d([-3, -1, 1, 3, 5, 7], [6, 1])
+
+            const surface = {
+                name: 'Grafica de perdida durante el entrenamiento',
+                tab: 'Entrenamiento',
+                styles: { height: '300px'},
+                domContainer: document.getElementById('visor_entrenamiento')
+            }
+
+            await model.fit(xs, ys, {
+                epochs: 350,
+                callbacks: tfvis.show.fitCallbacks(surface, ['loss'], {
+                    callbacks: ['onEpochEnd']
+                })
+            })
+
+            document.getElementById('output_field').innerText = "modelo entrenado listo para usar"
+        }
+
+        async function predecir() {
+            const input = document.getElementById("user_input").value;
+            const numeros = input.split(',').map(n => parseFloat(n.trim())).filter(n => !isNaN(n));
+            
+
+            if(numeros.length !== 3) {
+                document.getElementById('resultado').innerText="Por favor ingresa tres numeros validos separados por comas"
+                return;
+            }
+
+            const inputTensor = tf.tensor2d(numeros, [numeros.length, 1]);
+            const prediction = model.predict(inputTensor);
+
+            const predValues = await prediction.data();
+            document.getElementById('resultado').innerText = `Predicción para [${numeros.join(', ')}]: ${Array.from(predValues).map(n => n.toFixed(2)).join(', ')}`
+        }
+        learnLinear()
+
+    </script>
+</html>
